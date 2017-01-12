@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 #include "Arduino.h"
-#include "globals.h"
+#include "Device.h"
 
 
 class Led

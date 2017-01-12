@@ -88,14 +88,14 @@
 
 #include <ESP8266WiFi.h>
 #include "MqttClient.h"
+#include "Device.h"
 #include <TimeLib.h>           // http://playground.arduino.cc/code/time - installed via library manager
-#include "globals.h"        // global structures and enums used by the applocation
 #include "led.h"
 #include "Bme280.h"
 #include "bmp280.h"
 #include "bmp180.h"
 
-#define delay(s) client.mqttDelay(s)
+#define delay(s) client.mqttDelay(s)  // this overrides the standard delay with a safe mqtt delay which calls mqtt.loop()
 
 
 
@@ -107,9 +107,7 @@ BoardType boardType = WeMos; // BoardType enumeration: NodeMCU, WeMos, SparkfunT
 
 WiFiClientSecure tlsClient;
 MqttClient client(tlsClient);
-
-
-DeviceConfig device;
+Device device;
 
 //Sensor sensor(&client);
 //Bmp180 sensor(&client);
@@ -117,8 +115,6 @@ DeviceConfig device;
 Bme280 sensor(&client);
 
 Led led(BUILTIN_LED);
-
-
 
 IPAddress timeServer(62, 237, 86, 238); // Update these with values suitable for your network.
 
@@ -140,13 +136,14 @@ void initDeviceConfig() { // Example device configuration
   client.sasExpiryPeriodInSeconds = 15 * 60; // Renew Sas Token every 15 minutes
   client.certificateFingerprint = certificateFingerprint;
   client.setConnectionString(connectionString);
+  sensor.geo = geo;
 }
 
 void setup() {
 	Serial.begin(115200);
  
   initDeviceConfig();   
-  initCloudConfig(ssid, pwd, geo);  
+  device.initCloudConfig(ssid, pwd, geo);  
   
   wifiConnect();
   

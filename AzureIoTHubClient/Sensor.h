@@ -2,7 +2,6 @@
 #define Sensor_h
 
 #include "Arduino.h"
-#include "Globals.h"
 #include "MqttClient.h"
 #include <ArduinoJson.h>    // https://github.com/bblanchon/ArduinoJson - installed via library manager
 #include <TimeLib.h>           // http://playground.arduino.cc/code/time - installed via library manager
