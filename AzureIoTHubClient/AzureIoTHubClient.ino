@@ -89,7 +89,6 @@
 #include <ESP8266WiFi.h>
 #include "MqttClient.h"
 #include <TimeLib.h>           // http://playground.arduino.cc/code/time - installed via library manager
-#include <ArduinoJson.h>    // https://github.com/bblanchon/ArduinoJson - installed via library manager
 #include "globals.h"        // global structures and enums used by the applocation
 #include "led.h"
 #include "Bme280.h"
@@ -111,12 +110,11 @@ MqttClient client(tlsClient);
 
 
 DeviceConfig device;
-Telemetry data;
 
-//Sensor sensor(&data, &client);
-//Bmp180 sensor(&data, &client);
-//Bmp280 sensor(&data, &client);
-Bme280 sensor(&data, &client);
+//Sensor sensor(&client);
+//Bmp180 sensor(&client);
+//Bmp280 sensor(&client);
+Bme280 sensor(&client);
 
 Led led(BUILTIN_LED);
 
@@ -203,7 +201,7 @@ void loop() {
   else {  
     client.mqttConnect(tlsClient);  
     sensor.measure();    
-    client.send(serializeTelemetry(&data)); 
+    client.send(sensor.toJSON()); 
     
     if (device.deepSleepSeconds > 0) {
       WiFi.mode(WIFI_OFF);

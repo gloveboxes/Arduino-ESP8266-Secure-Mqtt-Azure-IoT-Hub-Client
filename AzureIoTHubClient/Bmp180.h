@@ -9,7 +9,7 @@
 class Bmp180 : public Sensor
 {
   public:
-    Bmp180(Telemetry* data, MqttClient* mqttClient) : Sensor(data, mqttClient){};
+    Bmp180(MqttClient* mqttClient) : Sensor(mqttClient){};
     void measure();
 
   private:

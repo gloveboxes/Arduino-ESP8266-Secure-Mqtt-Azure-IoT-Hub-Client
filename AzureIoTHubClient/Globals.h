@@ -9,16 +9,6 @@ enum BoardType {
   Other
 };
 
-struct Telemetry{
-  float temperature;
-  float humidity;
-  int pressure;
-  int light;
-  int msgId;
-  const char *geo;
- 
-  unsigned int WiFiConnectAttempts;
-};
 
 
 struct DeviceConfig {

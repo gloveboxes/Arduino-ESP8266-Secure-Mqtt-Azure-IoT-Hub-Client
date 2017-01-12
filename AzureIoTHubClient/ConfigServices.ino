@@ -28,7 +28,7 @@ void initCloudConfig() {
 	client.host = GetValue(root["host"]);
 	client.key = (char*)GetValue(root["key"]);
 	client.deviceId = GetValue(root["deviceId"]);
-	data.geo = GetValue(root["geo"]);
+	sensor.geo = GetValue(root["geo"]);
 
 
 	device.wifiPairs = root["wifi"];
@@ -48,7 +48,7 @@ void initCloudConfig(const char *ssid, const char *pwd, const char *geo) {
 	device.pwd = new const char*[device.wifiPairs];
 	device.ssid[0] = ssid;
 	device.pwd[0] = pwd;
-	data.geo = geo;
+	sensor.geo = geo;
 }
 
 const char *GetValue(const char* value) {
