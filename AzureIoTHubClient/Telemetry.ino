@@ -15,6 +15,7 @@ char* serializeTelemetry(Telemetry *telemetry) {
 	root["hPa"] = telemetry->pressure;
 	root["Light"] = telemetry->light;
 	root["Geo"] = telemetry->geo;
+  root["Schema"] = 1;
 
 	//instrumentation
 	root["WiFi"] = telemetry->WiFiConnectAttempts;
