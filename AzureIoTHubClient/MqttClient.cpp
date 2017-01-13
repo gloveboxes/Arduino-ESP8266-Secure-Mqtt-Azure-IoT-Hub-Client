@@ -56,15 +56,6 @@ String MqttClient::urlEncode(const char* msg)
   return encodedMsg;
 }
 
-void MqttClient::generateSas(){
-  if (timeStatus() == timeNotSet) { return; }
-
-  if (now() > sasExpiryTime){
-    delete[] hubPass;
-    hubPass = (char*)GetStringValue(createIotHubSas(key, sasUrl));
-  }
-}
-
 const char* MqttClient::GetStringValue(String value) {
   int len = value.length() + 1;
   char *temp = new char[len];
@@ -119,7 +110,7 @@ String MqttClient::splitStringByIndex(String data, char separator, int index)
   return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
-bool MqttClient::verifyServerFingerprint(WiFiClientSecure& tlsClient){
+bool MqttClient::verifyServerFingerprint(){
   /* 
    http://hassansin.github.io/certificate-pinning-in-nodejs
    for information on generating fingerprint
@@ -129,7 +120,7 @@ bool MqttClient::verifyServerFingerprint(WiFiClientSecure& tlsClient){
   */
   
 
-  if (tlsClient.verify(certificateFingerprint, host)) {
+  if (_tlsClient->verify(certificateFingerprint, host)) {
     Serial.print("Certificate fingerprint verified against ");
     Serial.print(host);
     Serial.println(" sucessfully");
@@ -139,12 +130,25 @@ bool MqttClient::verifyServerFingerprint(WiFiClientSecure& tlsClient){
   }
 }
 
-void MqttClient::mqttConnect(WiFiClientSecure& tlsClient) {
-  generateSas();
-  if (connected()){ return; }
+bool MqttClient::generateSas(){
+  if (timeStatus() == timeNotSet) { 
+    Serial.println("Time not set. Can't generate a SAS, Can't connect to Azure IoT Hub");
+    return false; 
+  }
+
+  if (now() > sasExpiryTime){
+    delete[] hubPass;
+    hubPass = (char*)GetStringValue(createIotHubSas(key, sasUrl));
+  }
+  return true;
+}
+
+bool MqttClient::mqttConnect() {
+  if (!generateSas()) { return false; }
+  if (connected()){ return true; }
   
   // Loop until we're reconnected
-  while (!connected()) {
+  while (!connected() && WiFi.status() == WL_CONNECTED) {
     Serial.println("Attempting MQTT Connection");
     // Attempt to connect
 
@@ -152,7 +156,7 @@ void MqttClient::mqttConnect(WiFiClientSecure& tlsClient) {
       
       Serial.println("MQTT Connected");
      
-      verifyServerFingerprint(tlsClient);
+      verifyServerFingerprint();
      
       subscribe(mqttTopicSubscribe);
       loop();  //reads command...
@@ -165,6 +169,12 @@ void MqttClient::mqttConnect(WiFiClientSecure& tlsClient) {
       mqttDelay(5000);
     }
   }
+  return connected();
+}
+
+void MqttClient::close(){
+  unsubscribe(mqttTopicSubscribe);
+  disconnect();
 }
 
 

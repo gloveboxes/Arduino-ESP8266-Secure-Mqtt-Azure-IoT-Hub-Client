@@ -81,8 +81,8 @@
 /*
   Information on TLS verify certicates
   https://nofurtherquestions.wordpress.com/2016/03/14/making-an-esp8266-web-accessible/
-  https://krzychb.gitbooks.io/esp8266wifi-library/content/client-secure-examples.html
-  https://krzychb.gitbooks.io/esp8266wifi-library/content/client-secure-class.html
+  https://krzychb.gitbooks.io/esp8266wifi-library/content/mqttClient-secure-examples.html
+  https://krzychb.gitbooks.io/esp8266wifi-library/content/mqttClient-secure-class.html
   https://raw.githubusercontent.com/Azure/azure-iot-sdk-c/76906dc5fcb38eb3d2c67b670f638ed8965e502d/certs/certs.c
 */
 
@@ -90,12 +90,13 @@
 #include "MqttClient.h"
 #include "Device.h"
 #include <TimeLib.h>           // http://playground.arduino.cc/code/time - installed via library manager
-#include "led.h"
+#include "Led.h"
 #include "Bme280.h"
-#include "bmp280.h"
-#include "bmp180.h"
+#include "Bmp280.h"
+#include "Bmp180.h"
+#include "DhtSensor.h"
 
-#define delay(s) client.mqttDelay(s)  // this overrides the standard delay with a safe mqtt delay which calls mqtt.loop()
+#define delay(s) mqttClient.mqttDelay(s)  // this overrides the standard delay with a safe mqtt delay which calls mqtt.loop()
 
 
 
@@ -106,13 +107,15 @@ const char* geo = "syd-master";
 BoardType boardType = WeMos; // BoardType enumeration: NodeMCU, WeMos, SparkfunThing, Other (defaults to Other).
 
 WiFiClientSecure tlsClient;
-MqttClient client(tlsClient);
-Device device;
+MqttClient mqttClient(tlsClient);
+Device device(ssid, pwd);
 
-//Sensor sensor(&client);
-//Bmp180 sensor(&client);
-//Bmp280 sensor(&client);
-Bme280 sensor(&client);
+//Sensor sensor(&mqttClient);
+//Bmp180 sensor(&mqttClient);
+//Bmp280 sensor(&mqttClient);
+Bme280 sensor(&mqttClient);
+//DhtSensor sensor(&mqttClient, device, dht11);
+//DhtSensor sensor(&mqttClient, device, dht22);
 
 Led led(BUILTIN_LED);
 
@@ -122,7 +125,7 @@ IPAddress timeServer(62, 237, 86, 238); // Update these with values suitable for
  http://hassansin.github.io/certificate-pinning-in-nodejs
  for information on generating the certificate fingerprint
  From Ubuntu subsystem on Windows 10
- echo -n | openssl s_client -connect IoTCampAU.azure-devices.net:8883 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > cert.pem
+ echo -n | openssl s_mqttClient -connect IoTCampAU.azure-devices.net:8883 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > cert.pem
  openssl x509 -noout -in cert.pem -fingerprint
 */
 const char* certificateFingerprint = "38:5C:47:B1:97:DA:34:57:BB:DD:E7:7C:B9:11:8F:8D:1D:92:EB:F1";
@@ -133,9 +136,9 @@ void initDeviceConfig() { // Example device configuration
 	device.deepSleepSeconds = 0;         // if greater than zero with call ESP8266 deep sleep (default is 0 disabled). GPIO16 needs to be tied to RST to wake from deepSleep. Causes a reset, execution restarts from beginning of sketch
 	device.publishRateInSeconds = 1;     // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
   
-  client.sasExpiryPeriodInSeconds = 15 * 60; // Renew Sas Token every 15 minutes
-  client.certificateFingerprint = certificateFingerprint;
-  client.setConnectionString(connectionString);
+  mqttClient.sasExpiryPeriodInSeconds = 15 * 60; // Renew Sas Token every 15 minutes
+  mqttClient.certificateFingerprint = certificateFingerprint;
+  mqttClient.setConnectionString(connectionString);
   sensor.geo = geo;
 }
 
@@ -143,43 +146,18 @@ void setup() {
 	Serial.begin(115200);
  
   initDeviceConfig();   
-  device.initCloudConfig(ssid, pwd, geo);  
-  
-  wifiConnect();
-  
+  device.connectWifi();  
   getCurrentTime();
   
-	client.setServer(client.host, 8883);
-	client.setCallback(callback); 
-}
-
-void wifiConnect() {
-
-	delay(10);
-  
-	Serial.println();
-	Serial.print("Connecting to ");
-	Serial.println(device.ssid[0]);
-
-  WiFi.begin(device.ssid[0], device.pwd[0]);
-
-	while (WiFi.status() != WL_CONNECTED) {
-		delay(500);
-		Serial.print(".");
-	}
- 
-	Serial.println("");
-	Serial.println("WiFi connected");
-	Serial.println("IP address: ");
-	Serial.println(WiFi.localIP());
+	mqttClient.setServer(mqttClient.host, 8883);
+	mqttClient.setCallback(callback); 
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
   if (length > 0 ) {
     char command = (char)payload[0];
     // some command processing here based on message received
-  }
-  
+  }  
   led.toggle();  // for this sample, just toggle the led
 }
 
@@ -191,22 +169,19 @@ void getCurrentTime() {
 	}
 }
 
-void loop() {
-  if (WiFi.status() != WL_CONNECTED){
-    wifiConnect();
+void loop() {  
+  if (device.connectWifi()) { Serial.println("mqtt close"); mqttClient.close(); }
+
+  sensor.measure();    
+  
+  mqttClient.send(sensor.toJSON());
+  
+  if (device.deepSleepSeconds > 0) {
+    WiFi.mode(WIFI_OFF);
+    ESP.deepSleep(1000000 * device.deepSleepSeconds, WAKE_RF_DEFAULT); // GPIO16 needs to be tied to RST to wake from deepSleep. Execute restarts from beginning of sketch
   }
-  else {  
-    client.mqttConnect(tlsClient);  
-    sensor.measure();    
-    client.send(sensor.toJSON()); 
-    
-    if (device.deepSleepSeconds > 0) {
-      WiFi.mode(WIFI_OFF);
-      ESP.deepSleep(1000000 * device.deepSleepSeconds, WAKE_RF_DEFAULT); // GPIO16 needs to be tied to RST to wake from deepSleep. Execute restarts from beginning of sketch
-    }
-    else {
-      delay(device.publishRateInSeconds * 1000);  // limit publishing rate
-    }
+  else {
+    delay(device.publishRateInSeconds * 1000);  // limit publishing rate
   }
 }
 

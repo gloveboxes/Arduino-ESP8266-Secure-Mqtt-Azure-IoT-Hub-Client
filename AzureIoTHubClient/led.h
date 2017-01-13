@@ -2,10 +2,6 @@
 #define Led_h
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "Arduino.h"
 #include "Device.h"
 
@@ -24,8 +20,5 @@ class Led
     BoardType _bt;
 };
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

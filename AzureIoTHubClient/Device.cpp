@@ -1,12 +1,64 @@
 #include "Device.h"
 
-void Device::initCloudConfig(const char *_ssid, const char *_pwd, const char *geo) {
+void Device::initialise(const char* ssid, const char* pwd){
   wifiPairs = 1;
-  ssid = new const char*[wifiPairs];
-  pwd = new const char*[wifiPairs];
-  ssid[0] = _ssid;
-  pwd[0] = _pwd;
-//  sensor.geo = geo;
+  _ssid = new const char*[wifiPairs];
+  _pwd = new const char*[wifiPairs];
+  _ssid[0] = ssid;
+  _pwd[0] = pwd;
+}
+
+
+void Device::initialise(const char **ssid, const char **pwd, int ssidCount, int pwdCount) {
+  _ssid = ssid;
+  _pwd = pwd;
+
+  WiFi.mode(WIFI_STA);  // Ensure WiFi in Station/Client Mode
+  
+  wifiPairs = ssidCount < pwdCount ? ssidCount : pwdCount;
+  wifiPairs /= sizeof(char*);
+}
+
+bool Device::connectWifi(){
+  bool newConnection = false;
+  LastWifiTime = 0;
+  const int WifiTimeoutMilliseconds = 30000;  // 60 seconds
+
+  if (WiFi.status() != WL_CONNECTED){
+    Serial.println("Reset Wifi");
+    WiFi.mode(WIFI_OFF);
+    WiFi.mode(WIFI_STA);  // Ensure WiFi in Station/Client Mode
+  }  
+
+  while (WiFi.status() != WL_CONNECTED){
+    newConnection = true;    
+        
+    if (millis() < LastWifiTime) {
+      Serial.print(".");
+      delay(500); 
+      continue;
+    }  
+
+    if (WifiIndex >= wifiPairs) {WifiIndex = 0;}
+  
+    Serial.println("trying " + String(_ssid[WifiIndex]));
+  
+    WiFi.begin(_ssid[WifiIndex], _pwd[WifiIndex]);
+    
+    LastWifiTime = millis() + WifiTimeoutMilliseconds;
+    
+    WifiIndex++;  //increment wifi indexready for the next ssid/pwd pair in case the current wifi pair dont connect
+
+  }
+  
+  if (newConnection) {
+    Serial.println("");
+    Serial.println("WiFi connected");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+  }
+
+  return newConnection;
 }
 
 //void Device::initCloudConfig() {

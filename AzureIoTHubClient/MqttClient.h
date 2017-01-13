@@ -8,32 +8,25 @@
 class MqttClient : public PubSubClient
 {
   public:
-    MqttClient(Client& client) : PubSubClient(client) {
-      int x = 0;  
+    MqttClient(WiFiClientSecure& tlsClient) : PubSubClient(tlsClient) {
+      _tlsClient = &tlsClient;
     }
-    void mqttConnect(WiFiClientSecure& tlsClient);
-    String createIotHubSas(char *key, String url);
 
+    void close();
     void setConnectionString(String cs);
-    bool verifyServerFingerprint(WiFiClientSecure& tlsClient);
+    
 
-    void send(char* json){
-      publish(mqttTopicPublish, json);
+    int send(char* json){
+      if (mqttConnect()) { return publish(mqttTopicPublish, json); } else {return 0;}
     }
     
     
     void mqttDelay(int milliseconds){
-      if (this->connected()){
-        long startTime = millis();    
-        while (millis() - startTime < milliseconds){
-          delay(1);
-          this->loop();
-        }  
-      }
-      else
-      {
-        delay(milliseconds);
-      }
+      long startTime = millis();    
+      while (millis() - startTime < milliseconds){
+        delay(1);
+        this->loop();
+      }  
     }
 
 
@@ -50,7 +43,11 @@ class MqttClient : public PubSubClient
     String sasUrl;
 
   private:
-    void generateSas();
+    WiFiClientSecure* _tlsClient;
+    bool mqttConnect();
+    bool generateSas();
+    String createIotHubSas(char *key, String url);
+    bool verifyServerFingerprint();
     String splitStringByIndex(String data, char separator, int index);
     char* format(const char *input, const char *value);
     char* format(const char *input, const char *value1, const char *value2);
