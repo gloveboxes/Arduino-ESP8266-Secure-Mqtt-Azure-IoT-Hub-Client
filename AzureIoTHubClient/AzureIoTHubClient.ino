@@ -100,10 +100,10 @@
 
 
 
-const char* connectionString = "HostName=IoTCampAU.azure-devices.net;DeviceId=syd-master;SharedAccessKey=M3zMtx9teF9CtB/ngXfAsOQcTDpT61kOEN42OkMoFYw=";
+const char* connectionString = "HostName=IoTCampAU.azure-devices.net;DeviceId=syd-bdr2;SharedAccessKey=uXcyncsqeqxNyseM2d9+NwzqPn3rufPHVJC7L8i/biI=";
 const char* ssid = "NCW";
 const char* pwd = "malolos5459";
-const char* geo = "syd-master";
+const char* geo = "syd-bdr2";
 BoardType boardType = WeMos; // BoardType enumeration: NodeMCU, WeMos, SparkfunThing, Other (defaults to Other).
 
 WiFiClientSecure tlsClient;
@@ -112,8 +112,8 @@ Device device(ssid, pwd);
 
 //Sensor sensor(&mqttClient);
 //Bmp180 sensor(&mqttClient);
-//Bmp280 sensor(&mqttClient);
-Bme280 sensor(&mqttClient);
+Bmp280 sensor(&mqttClient);
+//Bme280 sensor(&mqttClient);
 //DhtSensor sensor(&mqttClient, device, dht11);
 //DhtSensor sensor(&mqttClient, device, dht22);
 
@@ -134,7 +134,7 @@ const char* certificateFingerprint = "38:5C:47:B1:97:DA:34:57:BB:DD:E7:7C:B9:11:
 void initDeviceConfig() { // Example device configuration
 	device.boardType = boardType;            // BoardType enumeration: NodeMCU, WeMos, SparkfunThing, Other (defaults to Other). This determines pin number of the onboard LED for wifi and publish status. Other means no LED status
 	device.deepSleepSeconds = 0;         // if greater than zero with call ESP8266 deep sleep (default is 0 disabled). GPIO16 needs to be tied to RST to wake from deepSleep. Causes a reset, execution restarts from beginning of sketch
-	device.publishRateInSeconds = 1;     // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
+	device.publishRateInSeconds = 30;     // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
   
   mqttClient.sasExpiryPeriodInSeconds = 15 * 60; // Renew Sas Token every 15 minutes
   mqttClient.certificateFingerprint = certificateFingerprint;

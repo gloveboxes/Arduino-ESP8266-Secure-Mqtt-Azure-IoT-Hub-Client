@@ -5,7 +5,6 @@
 //#include <EEPROM.h>
 //#include <ArduinoJson.h>    // https://github.com/bblanchon/ArduinoJson - installed via library manager
 #include <ESP8266WiFi.h>
-#include "MqttClient.h"
 
 enum BoardType {
   NodeMCU,
