@@ -10,7 +10,7 @@ void Bmp180::initialise(){
 }
 
 void Bmp180::measure(){
-  const int numberOfSamples = 4;
+  const int numberOfSamples = 1;
   int sampleCount = 0, sampleAttempts = 0;
 
   initialise();
@@ -24,12 +24,14 @@ void Bmp180::measure(){
    
     if (event.pressure) {      
       pressure += (int)event.pressure;    
-      float temperature;
-      bmp180.getTemperature(&temperature);
-      temperature += temperature;
+
+      float temp;
+      bmp180.getTemperature(&temp);
+      temperature += temp;
 
       sampleCount++;
-      delay(100);  
+
+      if (sampleCount < numberOfSamples) { delay(100); }  
     }
     
     sampleAttempts++;

@@ -7,7 +7,7 @@ void DhtSensor::initialise(){
   dht = DHT(DHT11PIN, _dhtType);
  
   dht.begin();
-  delay(100);  
+  delay(100);
   initialised = true;
 }
 

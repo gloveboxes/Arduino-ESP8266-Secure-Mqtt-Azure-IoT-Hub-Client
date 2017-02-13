@@ -12,7 +12,7 @@ enum DhtType {
 
 class DhtSensor : public Sensor {  
   public:
-    DhtSensor(MqttClient* mqttClient, Device& device, DhtType dhtType) : Sensor(mqttClient){
+    DhtSensor(MqttClient* mqttClient, Device& device, DhtType dhtType) : Sensor(mqttClient) {
       _dhtType = dhtType;
       device.sensorMode = DhtShieldMode;
     };
