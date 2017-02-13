@@ -90,33 +90,34 @@
 #include "MqttClient.h"
 #include "Device.h"
 #include <TimeLib.h>           // http://playground.arduino.cc/code/time - installed via library manager
+#include "Led.h"
 #include "Bme280.h"
 #include "Bmp280.h"
 #include "Bmp180.h"
 #include "DhtSensor.h"
-#include "DigitalPin.h"
 
 #define delay(s) mqttClient.mqttDelay(s)  // this overrides the standard delay with a safe mqtt delay which calls mqtt.loop()
 
 
 
-const char* connectionString = "HostName=IoTCampAU.azure-devices.net;DeviceId=syd-solar;SharedAccessKey=vbCneLEizMZ2x4PBDehd8BsvhHoUEqLU2mcZ2oQxXr8=";
+const char* connectionString = "HostName=IoTCampAU.azure-devices.net;DeviceId=syd-bdr2;SharedAccessKey=uXcyncsqeqxNyseM2d9+NwzqPn3rufPHVJC7L8i/biI=";
 const char* ssid = "NCW";
 const char* pwd = "malolos5459";
-const char* geo = "syd-solar";
+const char* geo = "syd-bdr2";
+BoardType boardType = WeMos; // BoardType enumeration: NodeMCU, WeMos, SparkfunThing, Other (defaults to Other).
 
 WiFiClientSecure tlsClient;
 MqttClient mqttClient(tlsClient);
 Device device(ssid, pwd);
 
 //Sensor sensor(&mqttClient);
-Bmp180 sensor(&mqttClient);
-//Bmp280 sensor(&mqttClient);
+//Bmp180 sensor(&mqttClient);
+Bmp280 sensor(&mqttClient);
 //Bme280 sensor(&mqttClient);
 //DhtSensor sensor(&mqttClient, device, dht11);
 //DhtSensor sensor(&mqttClient, device, dht22);
 
-DigitalPin led(BUILTIN_LED, false, true); // initial state is off (false), invert true = high turns led off
+Led led(BUILTIN_LED);
 
 IPAddress timeServer(62, 237, 86, 238); // Update these with values suitable for your network.
 
@@ -131,8 +132,9 @@ const char* certificateFingerprint = "38:5C:47:B1:97:DA:34:57:BB:DD:E7:7C:B9:11:
 
 
 void initDeviceConfig() { // Example device configuration
+	device.boardType = boardType;            // BoardType enumeration: NodeMCU, WeMos, SparkfunThing, Other (defaults to Other). This determines pin number of the onboard LED for wifi and publish status. Other means no LED status
 	device.deepSleepSeconds = 0;         // if greater than zero with call ESP8266 deep sleep (default is 0 disabled). GPIO16 needs to be tied to RST to wake from deepSleep. Causes a reset, execution restarts from beginning of sketch
-	device.publishRateInSeconds = 4;     // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
+	device.publishRateInSeconds = 30;     // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
   
   mqttClient.sasExpiryPeriodInSeconds = 15 * 60; // Renew Sas Token every 15 minutes
   mqttClient.certificateFingerprint = certificateFingerprint;
@@ -171,11 +173,16 @@ void loop() {
   if (device.connectWifi()) { Serial.println("mqtt close"); mqttClient.close(); }
 
   sensor.measure();    
-  led.on();
+  
   mqttClient.send(sensor.toJSON());
-  led.off();
-
-  delay(device.publishRateInSeconds * 1000);  // limit publishing rate
+  
+  if (device.deepSleepSeconds > 0) {
+    WiFi.mode(WIFI_OFF);
+    ESP.deepSleep(1000000 * device.deepSleepSeconds, WAKE_RF_DEFAULT); // GPIO16 needs to be tied to RST to wake from deepSleep. Execute restarts from beginning of sketch
+  }
+  else {
+    delay(device.publishRateInSeconds * 1000);  // limit publishing rate
+  }
 }
 
 
