@@ -1,4 +1,4 @@
- #Securely stream data with command and control support from an ESP8266 MCUs to Azure IoT Hub over Secure MQTT
+# Securely stream data with command and control support from an ESP8266 MCUs to Azure IoT Hub over Secure MQTT
 
 
 ### Purpose
