@@ -100,17 +100,17 @@
 
 
 
-const char* connectionString = "HostName=IoTCampAU.azure-devices.net;DeviceId=syd-bdr1;SharedAccessKey=BH4d1s4ZMahVY3oCPHS1VJG2iJlW1h6KPmTUi76k7Ng=";
-const char* ssid = "NCW";
-const char* pwd = "malolos5459";
+const char* connectionString = "HostName=YourIoTHub.azure-devices.net;DeviceId=yourDevice;SharedAccessKey=BH4d1s4ZMahVhsjeu47hdhwY3JlW1h6KPmTUi76k7Ng=";
+const char* ssid = "wifi ssid";
+const char* pwd = "wifi pwd";
 const char* geo = "syd-bdr1";
 
 WiFiClientSecure tlsClient;
 MqttClient mqttClient(tlsClient);
 Device device(ssid, pwd);
 
-//Sensor sensor(&mqttClient);
-Bmp180 sensor(&mqttClient);
+Sensor sensor(&mqttClient);
+//Bmp180 sensor(&mqttClient);
 //Bmp280 sensor(&mqttClient);
 //Bme280 sensor(&mqttClient);
 //DhtSensor sensor(&mqttClient, device, dht11);
