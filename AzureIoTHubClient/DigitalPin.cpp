@@ -3,20 +3,24 @@
 
 void DigitalPin::on()
 {
-  if (_invert) {
+  if (_invert)
+  {
     digitalWrite(_pin, LOW);
   }
-  else {
+  else
+  {
     digitalWrite(_pin, HIGH);
   }
 }
 
 void DigitalPin::off()
 {
-  if (_invert) {
+  if (_invert)
+  {
     digitalWrite(_pin, HIGH);
   }
-  else {
+  else
+  {
     digitalWrite(_pin, LOW);
   }
 }
@@ -24,6 +28,12 @@ void DigitalPin::off()
 void DigitalPin::toggle()
 {
   _state = !_state;
-  if (_state) { on(); } else { off(); }
+  if (_state)
+  {
+    on();
+  }
+  else
+  {
+    off();
+  }
 }
-

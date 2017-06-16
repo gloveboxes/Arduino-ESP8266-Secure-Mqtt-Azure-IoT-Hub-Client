@@ -1,57 +1,71 @@
 #include "Device.h"
 
-void Device::initialise(const char* ssid, const char* pwd){
+void Device::initialise(const char *ssid, const char *pwd)
+{
   wifiPairs = 1;
-  _ssid = new const char*[wifiPairs];
-  _pwd = new const char*[wifiPairs];
+  _ssid = new const char *[wifiPairs];
+  _pwd = new const char *[wifiPairs];
   _ssid[0] = ssid;
   _pwd[0] = pwd;
 }
 
-
-void Device::initialise(const char **ssid, const char **pwd, int ssidCount, int pwdCount) {
+void Device::initialise(const char **ssid, const char **pwd, int ssidCount, int pwdCount)
+{
   _ssid = ssid;
   _pwd = pwd;
+#ifdef ARDUINO_ARCH_ESP8266
+  WiFi.mode(WIFI_STA); // Ensure WiFi in Station/Client Mode
+#endif
 
-  WiFi.mode(WIFI_STA);  // Ensure WiFi in Station/Client Mode
-  
   wifiPairs = ssidCount < pwdCount ? ssidCount : pwdCount;
-  wifiPairs /= sizeof(char*);
+  wifiPairs /= sizeof(char *);
 }
 
-bool Device::connectWifi(){
+bool Device::connectWifi()
+{
   bool newConnection = false;
   LastWifiTime = 0;
-  const int WifiTimeoutMilliseconds = 30000;  // 60 seconds
+  const int WifiTimeoutMilliseconds = 30000; // 60 seconds
 
-  if (WiFi.status() != WL_CONNECTED){
+  Serial.println("Connecting Wifi");
+
+  if (WiFi.status() != WL_CONNECTED)
+  {
     Serial.println("Reset Wifi");
+
+#ifdef ARDUINO_ARCH_ESP8266
     WiFi.mode(WIFI_OFF);
-    WiFi.mode(WIFI_STA);  // Ensure WiFi in Station/Client Mode
-  }  
-
-  while (WiFi.status() != WL_CONNECTED){
-    newConnection = true;    
-        
-    if (millis() < LastWifiTime) {
-      Serial.print(".");
-      delay(500); 
-      continue;
-    }  
-
-    if (WifiIndex >= wifiPairs) {WifiIndex = 0;}
-  
-    Serial.println("trying " + String(_ssid[WifiIndex]));
-  
-    WiFi.begin(_ssid[WifiIndex], _pwd[WifiIndex]);
-    
-    LastWifiTime = millis() + WifiTimeoutMilliseconds;
-    
-    WifiIndex++;  //increment wifi indexready for the next ssid/pwd pair in case the current wifi pair dont connect
-
+    WiFi.mode(WIFI_STA); // Ensure WiFi in Station/Client Mode
+#endif
   }
-  
-  if (newConnection) {
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    newConnection = true;
+
+    if (millis() < LastWifiTime)
+    {
+      Serial.print(".");
+      delay(500);
+      continue;
+    }
+
+    if (WifiIndex >= wifiPairs)
+    {
+      WifiIndex = 0;
+    }
+
+    Serial.println("trying " + String(_ssid[WifiIndex]));
+
+    WiFi.begin(_ssid[WifiIndex], _pwd[WifiIndex]);
+
+    LastWifiTime = millis() + WifiTimeoutMilliseconds;
+
+    WifiIndex++; //increment wifi indexready for the next ssid/pwd pair in case the current wifi pair dont connect
+  }
+
+  if (newConnection)
+  {
     Serial.println("");
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
@@ -101,7 +115,8 @@ bool Device::connectWifi(){
 //  }
 //}
 
-const char* Device::GetValue(const char *value) {
+const char *Device::GetValue(const char *value)
+{
   char *temp = new char[strlen(value) + 1];
   strcpy(temp, value);
   return temp;

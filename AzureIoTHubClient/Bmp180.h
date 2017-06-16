@@ -5,16 +5,15 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP085_U.h>
 
-
 class Bmp180 : public Sensor
 {
-  public:
-    Bmp180(MqttClient* mqttClient) : Sensor(mqttClient){};
-    void measure();
+public:
+  Bmp180(MqttClient *mqttClient) : Sensor(mqttClient){};
+  void measure();
 
-  private:
-    void initialise();
-    Adafruit_BMP085_Unified bmp180 = Adafruit_BMP085_Unified(10085);
+private:
+  void initialise();
+  Adafruit_BMP085_Unified bmp180 = Adafruit_BMP085_Unified(10085);
 };
 
 #endif

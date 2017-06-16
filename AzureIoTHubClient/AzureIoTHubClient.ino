@@ -84,28 +84,47 @@
   https://raw.githubusercontent.com/Azure/azure-iot-sdk-c/76906dc5fcb38eb3d2c67b670f638ed8965e502d/certs/certs.c
 */
 
-#include <ESP8266WiFi.h>
 #include "MqttClient.h"
 #include "Device.h"
-#include <TimeLib.h>           // http://playground.arduino.cc/code/time - installed via library manager
+#include <TimeLib.h> // http://playground.arduino.cc/code/time - installed via library manager
 #include "Bme280.h"
 #include "Bmp280.h"
 #include "Bmp180.h"
 #include "DhtSensor.h"
 #include "DigitalPin.h"
 #include "Ldr.h"
-#include "OLED.h"
+//#include "OLED.h"
 
-#define delay(s) mqttClient.mqttDelay(s)  // this overrides the standard delay with a safe mqtt delay which calls mqtt.loop()
+#define delay(s) mqttClient.mqttDelay(s) // this overrides the standard delay with a safe mqtt delay which calls mqtt.loop()
 
+#ifdef ARDUINO_ARCH_SAMD
+#include <WiFi101.h>
+WiFiSSLClient tlsClient;
+DigitalPin led(LED_BUILTIN, true, true); // initial state is off (false), invert true = high turns led off
+const char *certificateFingerprint = "";
+#endif
 
-
-const char* connectionString = "HostName=YourIoTHub.azure-devices.net;DeviceId=yourDevice;SharedAccessKey=BH4d1s4ZMahVhsjeu47hdhwY3JlW1h6KPmTUi76k7Ng=";
-const char* ssid = "wifi ssid";
-const char* pwd = "wifi pwd";
-const char* geo = "syd-bdr1";
-
+#ifdef ARDUINO_ARCH_ESP8266
+#include <ESP8266WiFi.h>
 WiFiClientSecure tlsClient;
+DigitalPin led(BUILTIN_LED, false, true); // initial state is off (false), invert true = high turns led off
+
+/* 
+ http://hassansin.github.io/certificate-pinning-in-nodejs
+ for information on generating the certificate fingerprint
+ From Ubuntu subsystem on Windows 10
+ echo -n | openssl s_mqttClient -connect IoTCampAU.azure-devices.net:8883 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > cert.pem
+ openssl x509 -noout -in cert.pem -fingerprint
+*/
+const char *certificateFingerprint = "38:5C:47:B1:97:DA:34:57:BB:DD:E7:7C:B9:11:8F:8D:1D:92:EB:F1";
+
+#endif
+
+const char *connectionString = "HostName=glovebox-01.azure-devices.net;DeviceId=featherM0;SharedAccessKey=22itY0zgGLz8z6RkCAYSMFKtklT5wdo02/U1Zwu/xGY=";
+const char *ssid = "NCW";
+const char *pwd = "malolos5459";
+const char *geo = "syd-bdr1";
+
 MqttClient mqttClient(tlsClient);
 Device device(ssid, pwd);
 
@@ -117,71 +136,74 @@ Sensor sensor(&mqttClient);
 //DhtSensor sensor(&mqttClient, device, dht22);
 
 Ldr light;
-DigitalPin led(BUILTIN_LED, false, true); // initial state is off (false), invert true = high turns led off
-OLED display(&sensor);
+
+//OLED display(&sensor);
 
 IPAddress timeServer(62, 237, 86, 238); // Update these with values suitable for your network.
 
-/* 
- http://hassansin.github.io/certificate-pinning-in-nodejs
- for information on generating the certificate fingerprint
- From Ubuntu subsystem on Windows 10
- echo -n | openssl s_mqttClient -connect IoTCampAU.azure-devices.net:8883 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > cert.pem
- openssl x509 -noout -in cert.pem -fingerprint
-*/
-const char* certificateFingerprint = "38:5C:47:B1:97:DA:34:57:BB:DD:E7:7C:B9:11:8F:8D:1D:92:EB:F1";
+void initDeviceConfig()
+{                                  // Example device configuration
+  device.publishRateInSeconds = 5; // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
 
-
-void initDeviceConfig() { // Example device configuration
-	device.publishRateInSeconds = 15;     // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
-  
   mqttClient.sasExpiryPeriodInSeconds = 15 * 60; // Renew Sas Token every 15 minutes
   mqttClient.certificateFingerprint = certificateFingerprint;
   mqttClient.setConnectionString(connectionString);
   sensor.geo = geo;
 }
 
-void setup() {
-	Serial.begin(115200);
+void setup()
+{
+#ifdef ARDUINO_ARCH_SAMD
+  WiFi.setPins(8, 7, 4, 2);
+  WiFi.lowPowerMode();
+#endif
+  //  while(!Serial) {}
+  Serial.begin(115200);
 
-  display.text("Connecting");
-  initDeviceConfig();   
-  device.connectWifi();  
+  //  display.text("Connecting");
+  initDeviceConfig();
+  device.connectWifi();
   getCurrentTime();
-  
-	mqttClient.setServer(mqttClient.host, 8883);
-	mqttClient.setCallback(callback); 
+
+  mqttClient.setServer(mqttClient.host, 8883);
+  mqttClient.setCallback(callback);
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
-  if (length > 0 ) {
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  if (length > 0)
+  {
     char command = (char)payload[0];
     // some command processing here based on message received
-  }  
-  led.toggle();  // for this sample, just toggle the led
+  }
+  led.toggle(); // for this sample, just toggle the led
 }
 
-void getCurrentTime() {
-	int ntpRetryCount = 0;
-	while (timeStatus() == timeNotSet && ++ntpRetryCount < 10) { // get NTP time
-		setSyncProvider(getNtpTime);
-		setSyncInterval(60 * 60);
-	}
+void getCurrentTime()
+{
+  int ntpRetryCount = 0;
+  while (timeStatus() == timeNotSet && ++ntpRetryCount < 10)
+  { // get NTP time
+    setSyncProvider(getNtpTime);
+    setSyncInterval(60 * 60);
+  }
 }
 
-void loop() {  
-  if (device.connectWifi()) { Serial.println("mqtt close"); mqttClient.close(); }
+void loop()
+{
+  if (device.connectWifi())
+  {
+    Serial.println("mqtt close");
+    mqttClient.close();
+  }
 
-  sensor.measure(); 
-  sensor.light = light.measure();   
-  display.sensorData();
-  
-//  led.on();
+  sensor.measure();
+  sensor.light = light.measure();
+  //  display.sensorData();
+
+  //  led.on();
   mqttClient.send(sensor.toJSON());
-//  led.off();
+  //  led.off();
 
-  delay(device.publishRateInSeconds * 1000);  // limit publishing rate
+  delay(device.publishRateInSeconds * 1000); // limit publishing rate
 }
-
-
-

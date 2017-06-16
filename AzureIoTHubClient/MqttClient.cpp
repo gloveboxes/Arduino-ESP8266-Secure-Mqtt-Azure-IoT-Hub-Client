@@ -1,52 +1,53 @@
 #include "MqttClient.h"
 #include "sha256.h"
 #include "Base64.h"
-#include <TimeLib.h>           // http://playground.arduino.cc/code/time - installed via library manager
+#include <TimeLib.h> // http://playground.arduino.cc/code/time - installed via library manager
 
-
-String MqttClient::createIotHubSas(char *key, String url){  
+String MqttClient::createIotHubSas(char *key, String url)
+{
   sasExpiryTime = now() + sasExpiryPeriodInSeconds;
-  
+
   String stringToSign = url + "\n" + sasExpiryTime;
 
   // START: Create signature
   // https://raw.githubusercontent.com/adamvr/arduino-base64/master/examples/base64/base64.ino
-  
+
   int keyLength = strlen(key);
-  
+
   int decodedKeyLength = base64_dec_len(key, keyLength);
-  char decodedKey[decodedKeyLength];  //allocate char array big enough for the base64 decoded key
-  
-  base64_decode(decodedKey, key, keyLength);  //decode key
-  
-  Sha256.initHmac((const uint8_t*)decodedKey, decodedKeyLength);
-  Sha256.print(stringToSign);  
-  char* sign = (char*) Sha256.resultHmac();
+  char decodedKey[decodedKeyLength]; //allocate char array big enough for the base64 decoded key
+
+  base64_decode(decodedKey, key, keyLength); //decode key
+
+  Sha256.initHmac((const uint8_t *)decodedKey, decodedKeyLength);
+  Sha256.print(stringToSign);
+  char *sign = (char *)Sha256.resultHmac();
   // END: Create signature
-  
+
   // START: Get base64 of signature
   int encodedSignLen = base64_enc_len(HASH_LENGTH);
   char encodedSign[encodedSignLen];
-  base64_encode(encodedSign, sign, HASH_LENGTH); 
-  
+  base64_encode(encodedSign, sign, HASH_LENGTH);
+
   // SharedAccessSignature
-  return "SharedAccessSignature sr=" + url + "&sig="+ urlEncode(encodedSign) + "&se=" + sasExpiryTime;
-  // END: create SAS  
+  return "SharedAccessSignature sr=" + url + "&sig=" + urlEncode(encodedSign) + "&se=" + sasExpiryTime;
+  // END: create SAS
 }
 
 //http://hardwarefun.com/tutorials/url-encoding-in-arduino
-String MqttClient::urlEncode(const char* msg)
+String MqttClient::urlEncode(const char *msg)
 {
   const char *hex = "0123456789abcdef";
   String encodedMsg = "";
 
-  while (*msg != '\0') {
-    if (('a' <= *msg && *msg <= 'z')
-      || ('A' <= *msg && *msg <= 'Z')
-      || ('0' <= *msg && *msg <= '9')) {
+  while (*msg != '\0')
+  {
+    if (('a' <= *msg && *msg <= 'z') || ('A' <= *msg && *msg <= 'Z') || ('0' <= *msg && *msg <= '9'))
+    {
       encodedMsg += *msg;
     }
-    else {
+    else
+    {
       encodedMsg += '%';
       encodedMsg += hex[*msg >> 4];
       encodedMsg += hex[*msg & 15];
@@ -56,17 +57,19 @@ String MqttClient::urlEncode(const char* msg)
   return encodedMsg;
 }
 
-const char* MqttClient::GetStringValue(String value) {
+const char *MqttClient::GetStringValue(String value)
+{
   int len = value.length() + 1;
   char *temp = new char[len];
   value.toCharArray(temp, len);
   return temp;
 }
 
-void MqttClient::setConnectionString(String cs){
+void MqttClient::setConnectionString(String cs)
+{
   host = GetStringValue(splitStringByIndex(splitStringByIndex(cs, ';', 0), '=', 1));
   deviceId = GetStringValue(splitStringByIndex(splitStringByIndex(cs, ';', 1), '=', 1));
-  key = (char*)GetStringValue(splitStringByIndex(splitStringByIndex(cs, ';', 2), '=', 1)); 
+  key = (char *)GetStringValue(splitStringByIndex(splitStringByIndex(cs, ';', 2), '=', 1));
   Serial.print("Host ");
   Serial.println(host);
 
@@ -74,22 +77,23 @@ void MqttClient::setConnectionString(String cs){
   mqttTopicPublish = format("devices/%s/messages/events/", deviceId);
   mqttTopicSubscribe = format("devices/%s/messages/devicebound/#", deviceId);
 
-  const char* TARGET_URL = "/devices/";
+  const char *TARGET_URL = "/devices/";
   sasUrl = urlEncode(host) + urlEncode(TARGET_URL) + (String)deviceId;
-  
 }
 
-char* MqttClient::format(const char *input, const char *value){
+char *MqttClient::format(const char *input, const char *value)
+{
   int len = strlen(input) + strlen(value);
   char *temp = new char[len];
-  sprintf(temp, input, value); 
+  sprintf(temp, input, value);
   return temp;
 }
 
-char* MqttClient::format(const char *input, const char *value1, const char *value2){
+char *MqttClient::format(const char *input, const char *value1, const char *value2)
+{
   int len = strlen(input) + strlen(value1) + strlen(value2);
   char *temp = new char[len];
-  sprintf(temp, input, value1, value2); 
+  sprintf(temp, input, value1, value2);
   return temp;
 }
 
@@ -97,71 +101,93 @@ char* MqttClient::format(const char *input, const char *value1, const char *valu
 String MqttClient::splitStringByIndex(String data, char separator, int index)
 {
   int found = 0;
-  int strIndex[] = { 0, -1 };
+  int strIndex[] = {0, -1};
   int maxIndex = data.length() - 1;
 
-  for (int i = 0; i <= maxIndex && found <= index; i++) {
-    if (data.charAt(i) == separator || i == maxIndex) {
+  for (int i = 0; i <= maxIndex && found <= index; i++)
+  {
+    if (data.charAt(i) == separator || i == maxIndex)
+    {
       found++;
       strIndex[0] = strIndex[1] + 1;
       strIndex[1] = (i == maxIndex) ? i + 1 : i;
     }
   }
-  return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
+  return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
-bool MqttClient::verifyServerFingerprint(){
-  /* 
+bool MqttClient::verifyServerFingerprint()
+{
+/* 
    http://hassansin.github.io/certificate-pinning-in-nodejs
    for information on generating fingerprint
    From Ubuntu subsystem on Windows 10
    echo -n | openssl s_client -connect IoTCampAU.azure-devices.net:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > cert.pem
    openssl x509 -noout -in cert.pem -fingerprint
   */
-  
+#ifdef ARDUINO_ARCH_ESP8266
 
-  if (_tlsClient->verify(certificateFingerprint, host)) {
+  if (_tlsClient->verify(certificateFingerprint, host))
+  {
     Serial.print("Certificate fingerprint verified against ");
     Serial.print(host);
     Serial.println(" sucessfully");
-  } else {
+  }
+  else
+  {
     Serial.println("Certificate fingerprint verification failed");
     ESP.restart();
   }
+#elseif
+  return true
+#endif
 }
 
-bool MqttClient::generateSas(){
-  if (timeStatus() == timeNotSet) { 
+bool MqttClient::generateSas()
+{
+  if (timeStatus() == timeNotSet)
+  {
     Serial.println("Time not set. Can't generate a SAS, Can't connect to Azure IoT Hub");
-    return false; 
+    return false;
   }
 
-  if (now() > sasExpiryTime){
+  if (now() > sasExpiryTime)
+  {
     delete[] hubPass;
-    hubPass = (char*)GetStringValue(createIotHubSas(key, sasUrl));
+    hubPass = (char *)GetStringValue(createIotHubSas(key, sasUrl));
   }
   return true;
 }
 
-bool MqttClient::mqttConnect() {
-  if (!generateSas()) { return false; }
-  if (connected()){ return true; }
-  
+bool MqttClient::mqttConnect()
+{
+  if (!generateSas())
+  {
+    return false;
+  }
+  if (connected())
+  {
+    return true;
+  }
+
   // Loop until we're reconnected
-  while (!connected() && WiFi.status() == WL_CONNECTED) {
+  while (!connected() && WiFi.status() == WL_CONNECTED)
+  {
     Serial.println("Attempting MQTT Connection");
     // Attempt to connect
 
-    if (connect(deviceId, hubUser, hubPass)) {
-      
+    if (connect(deviceId, hubUser, hubPass))
+    {
+
       Serial.println("MQTT Connected");
-     
+
       verifyServerFingerprint();
-     
+
       subscribe(mqttTopicSubscribe);
-      loop();  //reads command...
+      loop(); //reads command...
     }
-    else {
+    else
+    {
       Serial.print("MQTT Connection Failed, rc=");
       Serial.print(state());
       Serial.println(", trying again in 5 seconds");
@@ -172,9 +198,8 @@ bool MqttClient::mqttConnect() {
   return connected();
 }
 
-void MqttClient::close(){
+void MqttClient::close()
+{
   unsubscribe(mqttTopicSubscribe);
   disconnect();
 }
-
-
