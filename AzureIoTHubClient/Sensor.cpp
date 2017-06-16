@@ -12,9 +12,9 @@ void Sensor::measure()
   humidity = 50;
   pressure = 1000;
 
-  Serial.println(temperature);
-  Serial.println(pressure);
-  Serial.println(humidity);
+//  Serial.println(temperature);
+//  Serial.println(pressure);
+//  Serial.println(humidity);
 }
 
 char *Sensor::toJSON()

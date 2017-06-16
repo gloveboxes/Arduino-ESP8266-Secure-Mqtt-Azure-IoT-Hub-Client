@@ -100,7 +100,7 @@
 #ifdef ARDUINO_ARCH_SAMD
 #include <WiFi101.h>
 WiFiSSLClient tlsClient;
-DigitalPin led(LED_BUILTIN, true, true); // initial state is off (false), invert true = high turns led off
+DigitalPin led(LED_BUILTIN, false, false); // initial state is off (false), invert true = high turns led off
 const char *certificateFingerprint = "";
 #endif
 
@@ -120,7 +120,7 @@ const char *certificateFingerprint = "38:5C:47:B1:97:DA:34:57:BB:DD:E7:7C:B9:11:
 
 #endif
 
-const char *connectionString = "HostName=glovebox-01.azure-devices.net;DeviceId=featherM0;SharedAccessKey=22itY0zgGLz8z6RkCAYSMFKtklT5wdo02/U1Zwu/xGY=";
+const char *connectionString = "HostName=IoTCampAU.azure-devices.net;DeviceId=featherM0wifi;SharedAccessKey=4b3Y3q53LDK/PkK0hlWvAX5poDhcVZS+jWTN3Ryjfjg=";
 const char *ssid = "NCW";
 const char *pwd = "malolos5459";
 const char *geo = "syd-bdr1";

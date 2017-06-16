@@ -126,7 +126,6 @@ bool MqttClient::verifyServerFingerprint()
    openssl x509 -noout -in cert.pem -fingerprint
   */
 #ifdef ARDUINO_ARCH_ESP8266
-
   if (_tlsClient->verify(certificateFingerprint, host))
   {
     Serial.print("Certificate fingerprint verified against ");
@@ -138,8 +137,8 @@ bool MqttClient::verifyServerFingerprint()
     Serial.println("Certificate fingerprint verification failed");
     ESP.restart();
   }
-#elseif
-  return true
+#else
+  return true;
 #endif
 }
 
