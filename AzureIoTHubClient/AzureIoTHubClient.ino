@@ -101,6 +101,7 @@
 #include <WiFi101.h>
 WiFiSSLClient tlsClient;
 DigitalPin led(LED_BUILTIN, false, false); // initial state is off (false), invert true = high turns led off
+DigitalPin senorPowerPin(12, true, false); // initial state is off (false), invert true = high turns led off
 const char *certificateFingerprint = "";
 #endif
 
@@ -120,18 +121,18 @@ const char *certificateFingerprint = "38:5C:47:B1:97:DA:34:57:BB:DD:E7:7C:B9:11:
 
 #endif
 
-const char *connectionString = "HostName=IoTCampAU.azure-devices.net;DeviceId=featherM0wifi;SharedAccessKey=4b3Y3q53LDK/PkK0hlWvAX5poDhcVZS+jWTN3Ryjfjg=";
+const char *connectionString = "HostName=IoTCampAU.azure-devices.net;DeviceId=FeatherM0;SharedAccessKey=/g57wAa9k7vzuVqumRqkE4Ha9s5CqYajTpx7xlGAwd8=";
 const char *ssid = "NCW";
 const char *pwd = "malolos5459";
-const char *geo = "syd-bdr1";
+const char *geo = "syd-appt";
 
 MqttClient mqttClient(tlsClient);
 Device device(ssid, pwd);
 
-Sensor sensor(&mqttClient);
+//Sensor sensor(&mqttClient);
 //Bmp180 sensor(&mqttClient);
 //Bmp280 sensor(&mqttClient);
-//Bme280 sensor(&mqttClient);
+Bme280 sensor(&mqttClient);
 //DhtSensor sensor(&mqttClient, device, dht11);
 //DhtSensor sensor(&mqttClient, device, dht22);
 
@@ -143,7 +144,7 @@ IPAddress timeServer(62, 237, 86, 238); // Update these with values suitable for
 
 void initDeviceConfig()
 {                                  // Example device configuration
-  device.publishRateInSeconds = 5; // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
+  device.publishRateInSeconds = 20; // limits publishing rate to specified seconds (default is 90 seconds).  Connectivity problems may result if number too small eg 2
 
   mqttClient.sasExpiryPeriodInSeconds = 15 * 60; // Renew Sas Token every 15 minutes
   mqttClient.certificateFingerprint = certificateFingerprint;
@@ -157,13 +158,13 @@ void setup()
   WiFi.setPins(8, 7, 4, 2);
   WiFi.lowPowerMode();
 #endif
-  //  while(!Serial) {}
+//    while(!Serial) {}
   Serial.begin(115200);
 
   //  display.text("Connecting");
   initDeviceConfig();
   device.connectWifi();
-  getCurrentTime();
+//  getCurrentTime();
 
   mqttClient.setServer(mqttClient.host, 8883);
   mqttClient.setCallback(callback);
@@ -182,8 +183,10 @@ void callback(char *topic, byte *payload, unsigned int length)
 void getCurrentTime()
 {
   int ntpRetryCount = 0;
-  while (timeStatus() == timeNotSet && ++ntpRetryCount < 10)
+
+  while (timeStatus() == timeNotSet && ++ntpRetryCount < 20)
   { // get NTP time
+    delay(2000);
     setSyncProvider(getNtpTime);
     setSyncInterval(60 * 60);
   }
@@ -191,15 +194,22 @@ void getCurrentTime()
 
 void loop()
 {
+  senorPowerPin.on();
+  delay(50);
+  
+  getCurrentTime();
+  
   if (device.connectWifi())
   {
     Serial.println("mqtt close");
     mqttClient.close();
   }
 
-  sensor.measure();
-  sensor.light = light.measure();
-  //  display.sensorData();
+  sensor.measure(true);  
+  senorPowerPin.off();
+  
+//  sensor.light = light.measure();
+//  display.sensorData();
 
   //  led.on();
   mqttClient.send(sensor.toJSON());

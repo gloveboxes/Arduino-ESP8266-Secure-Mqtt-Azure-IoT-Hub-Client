@@ -9,7 +9,7 @@ class Bme280 : public Sensor
 {
 public:
   Bme280(MqttClient *mqttClient) : Sensor(mqttClient){};
-  void measure();
+  void measure(bool reset = false);
 
 private:
   void initialise();

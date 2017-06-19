@@ -1,5 +1,6 @@
 #include "Sensor.h"
 #include "MqttClient.h"
+#include <math.h>
 
 Sensor::Sensor(MqttClient *mqttClient)
 {
@@ -27,8 +28,8 @@ char *Sensor::toJSON()
   JsonObject &root = jsonBuffer.createObject();
 
   root["Utc"] = getISODateTime();
-  root["Celsius"] = temperature;
-  root["Humidity"] = humidity;
+  root["Celsius"] = round(temperature*10)/10.0;
+  root["Humidity"] = round(humidity);
   root["hPa"] = pressure;
   root["Light"] = light;
   root["Geo"] = geo;

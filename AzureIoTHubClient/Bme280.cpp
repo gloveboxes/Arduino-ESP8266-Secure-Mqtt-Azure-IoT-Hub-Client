@@ -12,8 +12,12 @@ void Bme280::initialise()
   initialised = true;
 }
 
-void Bme280::measure()
+void Bme280::measure(bool reset)
 {
+  if (reset == true) {
+    initialised = false;
+  }
+  
   const int numberOfSamples = 4;
 
   initialise();

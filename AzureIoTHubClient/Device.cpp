@@ -27,20 +27,23 @@ bool Device::connectWifi()
   LastWifiTime = 0;
   const int WifiTimeoutMilliseconds = 30000; // 60 seconds
 
-  Serial.println("Connecting Wifi");
 
+
+#ifdef ARDUINO_ARCH_ESP8266
   if (WiFi.status() != WL_CONNECTED)
   {
     Serial.println("Reset Wifi");
-
-#ifdef ARDUINO_ARCH_ESP8266
     WiFi.mode(WIFI_OFF);
     WiFi.mode(WIFI_STA); // Ensure WiFi in Station/Client Mode
-#endif
   }
+#endif
 
   while (WiFi.status() != WL_CONNECTED)
   {
+    if (!newConnection) {
+      Serial.println("Connecting Wifi");
+    }
+    
     newConnection = true;
 
     if (millis() < LastWifiTime)
@@ -58,6 +61,7 @@ bool Device::connectWifi()
     Serial.println("trying " + String(_ssid[WifiIndex]));
 
     WiFi.begin(_ssid[WifiIndex], _pwd[WifiIndex]);
+    delay(2000);
 
     LastWifiTime = millis() + WifiTimeoutMilliseconds;
 
@@ -66,6 +70,7 @@ bool Device::connectWifi()
 
   if (newConnection)
   {
+
     Serial.println("");
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
